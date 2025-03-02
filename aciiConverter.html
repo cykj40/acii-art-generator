@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .preview-section {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .image-preview,
+        .ascii-output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 300px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        pre {
+            margin: 0;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>ASCII Art Generator</h1>
+
+    <div class="container">
+        <div class="input-section">
+            <h2>Upload an Image</h2>
+            <input type="file" id="imageInput" accept="image/*">
+
+            <div id="dropZone"
+                style="border: 2px dashed #ccc; border-radius: 8px; padding: 25px; text-align: center; margin-top: 10px; background-color: #f9f9f9;">
+                <p>Drag and drop an image file here</p>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="widthInput">Width (characters):</label>
+                    <input type="number" id="widthInput" value="100" min="10" max="400">
+                </div>
+
+                <div class="control-group">
+                    <label for="charSetInput">Character Set:</label>
+                    <input type="text" id="charSetInput" value="@%#*+=-:. " style="width: 200px;">
+                </div>
+
+                <div class="control-group">
+                    <label for="invertCheckbox">Invert Brightness:</label>
+                    <input type="checkbox" id="invertCheckbox">
+                </div>
+
+                <div class="control-group">
+                    <label for="fontSizeInput">Font Size (px):</label>
+                    <input type="number" id="fontSizeInput" value="8" min="4" max="16">
+                </div>
+
+                <div class="control-group">
+                    <label for="colorModeCheckbox">Color Mode:</label>
+                    <input type="checkbox" id="colorModeCheckbox">
+                </div>
+
+                <div class="control-group">
+                    <label for="contrastInput">Contrast:</label>
+                    <input type="range" id="contrastInput" min="0.5" max="2.0" step="0.1" value="1.0">
+                    <span id="contrastValue">1.0</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="brightnessInput">Brightness:</label>
+                    <input type="range" id="brightnessInput" min="-0.5" max="0.5" step="0.05" value="0">
+                    <span id="brightnessValue">0.0</span>
+                </div>
+            </div>
+
+            <button id="convertBtn">Convert to ASCII</button>
+        </div>
+
+        <div class="preview-section">
+            <div class="image-preview">
+                <h3>Original Image</h3>
+                <img id="preview" style="max-width: 100%; max-height: 400px; display: none;">
+            </div>
+
+            <div class="ascii-output">
+                <h3>ASCII Art</h3>
+                <div id="output"></div>
+            </div>
+        </div>
+
+        <button id="copyBtn" style="display: none;">Copy ASCII Art</button>
+    </div>
+
+    <script src="acii.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageInput = document.getElementById('imageInput');
+            const preview = document.getElementById('preview');
+            const output = document.getElementById('output');
+            const convertBtn = document.getElementById('convertBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const widthInput = document.getElementById('widthInput');
+            const charSetInput = document.getElementById('charSetInput');
+            const invertCheckbox = document.getElementById('invertCheckbox');
+            const fontSizeInput = document.getElementById('fontSizeInput');
+            const colorModeCheckbox = document.getElementById('colorModeCheckbox');
+            const contrastInput = document.getElementById('contrastInput');
+            const contrastValue = document.getElementById('contrastValue');
+            const brightnessInput = document.getElementById('brightnessInput');
+            const brightnessValue = document.getElementById('brightnessValue');
+
+            let currentImage = null;
+
+            // Preview the selected image
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    processImageFile(file);
+                }
+            });
+
+            // Function to process the image file
+            function processImageFile(file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                    currentImage = new Image();
+                    currentImage.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Drag and drop functionality
+            const dropZone = document.getElementById('dropZone');
+
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop zone when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            // Handle dropped files
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight() {
+                dropZone.style.borderColor = '#4CAF50';
+                dropZone.style.backgroundColor = '#e8f5e9';
+            }
+
+            function unhighlight() {
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = '#f9f9f9';
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0 && files[0].type.match('image.*')) {
+                    processImageFile(files[0]);
+                }
+            }
+
+            // Convert image to ASCII art
+            convertBtn.addEventListener('click', () => {
+                if (!currentImage) {
+                    alert('Please select an image first');
+                    return;
+                }
+
+                const width = parseInt(widthInput.value);
+                const charSet = charSetInput.value;
+                const invertBrightness = invertCheckbox.checked;
+                const fontSize = parseInt(fontSizeInput.value);
+                const colorMode = colorModeCheckbox.checked;
+                const contrastFactor = parseFloat(contrastInput.value);
+                const brightnessFactor = parseFloat(brightnessInput.value);
+
+                const ascii = new ASCIIArtGenerator({
+                    width: width,
+                    charSet: charSet,
+                    invertBrightness: invertBrightness,
+                    colorMode: colorMode,
+                    contrastFactor: contrastFactor,
+                    brightnessFactor: brightnessFactor
+                });
+
+                const art = ascii.convertImageToASCII(currentImage);
+
+                output.innerHTML = '';
+
+                if (typeof art === 'string') {
+                    const pre = document.createElement('pre');
+                    pre.style.fontFamily = 'monospace';
+                    pre.style.lineHeight = '0.8';
+                    pre.style.fontSize = `${fontSize}px`;
+                    pre.style.whiteSpace = 'pre';
+                    pre.textContent = art;
+                    output.appendChild(pre);
+                } else {
+                    // For colored ASCII art
+                    art.style.fontSize = `${fontSize}px`;
+                    output.appendChild(art);
+                }
+
+                copyBtn.style.display = 'block';
+            });
+
+            // Add event listeners for the new range inputs to update their displayed values
+            contrastInput.addEventListener('input', () => {
+                contrastValue.textContent = contrastInput.value;
+            });
+
+            brightnessInput.addEventListener('input', () => {
+                brightnessValue.textContent = brightnessInput.value;
+            });
+
+            // Copy ASCII art to clipboard
+            copyBtn.addEventListener('click', () => {
+                const pre = output.querySelector('pre');
+                if (pre) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = pre.textContent;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    alert('ASCII art copied to clipboard!');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
