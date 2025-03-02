@@ -123,6 +123,27 @@
                     <input type="range" id="brightnessInput" min="-0.5" max="0.5" step="0.05" value="0">
                     <span id="brightnessValue">0.0</span>
                 </div>
+
+                <div class="control-group">
+                    <label for="detailedCharSetCheckbox">Use Detailed Character Set:</label>
+                    <input type="checkbox" id="detailedCharSetCheckbox">
+                </div>
+
+                <div class="control-group">
+                    <label for="sharpeningCheckbox">Apply Sharpening:</label>
+                    <input type="checkbox" id="sharpeningCheckbox">
+                </div>
+
+                <div class="control-group">
+                    <label for="ditheringCheckbox">Apply Dithering:</label>
+                    <input type="checkbox" id="ditheringCheckbox">
+                </div>
+
+                <div class="control-group">
+                    <label for="ditherAmountInput">Dither Amount:</label>
+                    <input type="range" id="ditherAmountInput" min="0.1" max="1.0" step="0.1" value="0.5">
+                    <span id="ditherAmountValue">0.5</span>
+                </div>
             </div>
 
             <button id="convertBtn">Convert to ASCII</button>
@@ -160,6 +181,11 @@
             const contrastValue = document.getElementById('contrastValue');
             const brightnessInput = document.getElementById('brightnessInput');
             const brightnessValue = document.getElementById('brightnessValue');
+            const detailedCharSetCheckbox = document.getElementById('detailedCharSetCheckbox');
+            const sharpeningCheckbox = document.getElementById('sharpeningCheckbox');
+            const ditheringCheckbox = document.getElementById('ditheringCheckbox');
+            const ditherAmountInput = document.getElementById('ditherAmountInput');
+            const ditherAmountValue = document.getElementById('ditherAmountValue');
 
             let currentImage = null;
 
@@ -242,6 +268,10 @@
                 const colorMode = colorModeCheckbox.checked;
                 const contrastFactor = parseFloat(contrastInput.value);
                 const brightnessFactor = parseFloat(brightnessInput.value);
+                const useDetailedCharSet = detailedCharSetCheckbox.checked;
+                const applySharpening = sharpeningCheckbox.checked;
+                const applyDithering = ditheringCheckbox.checked;
+                const ditherAmount = parseFloat(ditherAmountInput.value);
 
                 const ascii = new ASCIIArtGenerator({
                     width: width,
@@ -249,7 +279,11 @@
                     invertBrightness: invertBrightness,
                     colorMode: colorMode,
                     contrastFactor: contrastFactor,
-                    brightnessFactor: brightnessFactor
+                    brightnessFactor: brightnessFactor,
+                    useDetailedCharSet: useDetailedCharSet,
+                    applySharpening: applySharpening,
+                    applyDithering: applyDithering,
+                    ditherAmount: ditherAmount
                 });
 
                 const art = ascii.convertImageToASCII(currentImage);
@@ -281,6 +315,18 @@
             brightnessInput.addEventListener('input', () => {
                 brightnessValue.textContent = brightnessInput.value;
             });
+
+            ditherAmountInput.addEventListener('input', () => {
+                ditherAmountValue.textContent = ditherAmountInput.value;
+            });
+
+            // Show/hide dither amount control based on dithering checkbox
+            ditheringCheckbox.addEventListener('change', () => {
+                ditherAmountInput.parentElement.style.display = ditheringCheckbox.checked ? 'flex' : 'none';
+            });
+
+            // Initialize dither amount visibility
+            ditherAmountInput.parentElement.style.display = 'none';
 
             // Copy ASCII art to clipboard
             copyBtn.addEventListener('click', () => {
